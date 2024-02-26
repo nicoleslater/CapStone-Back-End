@@ -1,12 +1,11 @@
-const { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } = require("@aws-sdk/client-s3");
-const fs = require("fs");
-const uploadMiddlwware = require('../routes/uploadMiddleware.js');
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand }from "@aws-sdk/client-s3";
+import fs from "fs";
+
 
 // AWS SDK Configuration
 // Credentials will be automatically sourced from environment variables
 const s3Client = new S3Client({ region: process.env.AWS_REGION });
-
-exports.uploadFile = async (req, res) => {
+const uploadFile = async (req, res) => {
   try {
   const file = req.file;
   const fileStream = fs.createReadStream(file.path); // Using streams for better performance
@@ -35,8 +34,7 @@ exports.uploadFile = async (req, res) => {
     res.status(500).send(err.message || "Internal Server Error");
   }
 };
-
-exports.downloadFile = async (req, res) => {
+const downloadFile = async (req, res) => {
   console.log('Controller: downloadFile called for', req.params.filename);
   const params = {
     Bucket: process.env.BUCKET_NAME,
@@ -56,8 +54,7 @@ exports.downloadFile = async (req, res) => {
     res.status(500).send('Internal Server Error');
   }
 };
-
-exports.deleteFile = async (req, res) => {
+const deleteFile = async (req, res) => {
   console.log('Controller: deleteFile called for', req.params.filename);
   const params = {
     Bucket: process.env.BUCKET_NAME,
@@ -77,3 +74,8 @@ exports.deleteFile = async (req, res) => {
 };
 
 
+export {
+   uploadFile,
+   downloadFile,
+   deleteFile
+  };

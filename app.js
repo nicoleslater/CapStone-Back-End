@@ -1,13 +1,16 @@
-const express = require("express");
-const cors = require("cors");
-const morgan = require('morgan');
-const AWS = require('aws-sdk');
-const uploadRoutes = require('./routes/uploadRoutes.js');
+import express from "express";
+import cors from "cors";
+import morgan from 'morgan'
+import { S3Client } from "@aws-sdk/client-s3";
+import uploadRoutes from './routes/uploadRoutes.js';
+import videoRoutes from './routes/videoRoutes.js'
 
-AWS.config.update({
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-    region: process.env.AWS_REGION
+const s3Client = new S3Client({
+    region: process.env.AWS_REGION,
+    credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    }
 });
 
 const app = express();
@@ -17,7 +20,9 @@ app.use(cors());
 app.use(express.json());
 
 // Added for the S3 upload route
-app.use('/api', uploadRoutes);
+
+app.use('/api/uploads', uploadRoutes); 
+app.use('/api/videos', videoRoutes); 
 
 app.get("/", (req, res) => {
     res.send("Welcome to CapStone!");
@@ -32,4 +37,4 @@ app.use((err, req, res, next) => {
     res.status(500).json({ success: false, data: { error: 'Internal Server Error' } });
 });
 
-module.exports = app;
+export default app;

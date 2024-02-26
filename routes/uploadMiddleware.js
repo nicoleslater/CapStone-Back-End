@@ -1,6 +1,6 @@
 // uploadMiddleware.js
-const multer = require('multer');
-const path = require('path');
+import multer from 'multer';
+import path from 'path';
 
 // Set up storage location for multer
 const storage = multer.diskStorage({
@@ -16,4 +16,4 @@ const storage = multer.diskStorage({
 // Create multer upload middleware
 const upload = multer({ storage: storage });
 
-module.exports = upload;
+export default upload;

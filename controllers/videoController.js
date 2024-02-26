@@ -1,83 +1,202 @@
 // videoController.js
-const AWS = require('aws-sdk');
-const fs = require('fs');
+import dotenv from 'dotenv';
+dotenv.config();
+import fetch from 'node-fetch';
+import OpenTok from 'opentok';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { createSession, generateToken } from '../service/videoService.js';
+import fs from 'fs';
+import path from 'path';
+import {
+  getAllVideos,
+    getVideoById,
+    createVideo,
+    updateVideo,
+    deleteVideo
+} from '../queries/videos.js'
 
-// Initialize AWS SDK
-const s3 = new AWS.S3();
 
-// Controller function for uploading a video file to S3
-exports.uploadVideo = async (req, res) => {
+console.log('Vonage API Key XXXXXXX:', process.env.VONAGE_API_KEY);
+console.log('Vonage Secret message:', process.env.VONAGE_SECRET);
+
+const opentok = new OpenTok(process.env.VONAGE_API_KEY, process.env.VONAGE_SECRET);
+
+const getAllTidbits = async (req, res) => {
   try {
-    const file = req.file; // Assuming you're using multer for file upload middleware
-
-    // Read file content
-    const fileContent = fs.readFileSync(file.path);
-
-    // Upload parameters
-    const params = {
-      Bucket: 'capstone-2024-tidbits', // Specify your S3 bucket name
-      Key: file.originalname, // Use the original file name as the S3 object key
-      Body: fileContent,
-      ContentType: file.mimetype // Set the content type of the file
-    };
-
-    // Upload file to S3
-    await s3.upload(params).promise();
-
-    // Clean up temporary file
-    fs.unlinkSync(file.path);
-
-    res.status(200).send('Video uploaded successfully.');
+    const videos = await getAllVideos();
+    res.json(videos);
   } catch (error) {
-    console.error('Error uploading video:', error);
-    res.status(500).send('Internal Server Error');
+    console.error('Error fetching videos c:', error);
+    res.status(500).json('Error fetching videos c')
   }
 };
 
-// Controller function for downloading a video file from S3
-exports.downloadVideo = async (req, res) => {
+const getTidbitsById = async (req, res) => {
   try {
-    const key = req.params.key; // Assuming you're passing the S3 object key as a parameter
-
-    // Download parameters
-    const params = {
-      Bucket: 'capstone-2024-tidbits', // Specify your S3 bucket name
-      Key: key // The key of the video file to download
-    };
-
-    // Download file from S3
-    const data = await s3.getObject(params).promise();
-
-    res.set('Content-Type', data.ContentType);
-    res.send(data.Body);
+    const video = await getVideoById(req.params.id);
+    if (video) {
+      res.json(video)
+    } else {
+      res.status(404).json('Video not found c')
+    }
   } catch (error) {
-    console.error('Error downloading video:', error);
-    res.status(500).send('Internal Server Error');
+    console.error('Error fetching video by id c:', error);
+    res.status(500).json('Error fetching video c')
   }
 };
 
-// Controller function for deleting a video file from S3
-exports.deleteVideo = async (req, res) => {
+const createTidbitsMetadata = async (req, res) => {
   try {
-    const key = req.params.key; // Assuming you're passing the S3 object key as a parameter
-
-    // Delete parameters
-    const params = {
-      Bucket: 'capstone-2024-tidbits', // Specify your S3 bucket name
-      Key: key // The key of the video file to delete
+    const videoData = {
+      user_id: req.user.id,
+      title: req.body.title,
+      summary: req.body.summary,
+      video_url: req.body.video_url,
+      duration: req.body.duration
     };
-
-    // Delete file from S3
-    await s3.deleteObject(params).promise();
-
-    res.status(200).send('Video deleted successfully.');
+    const newVideo = await createVideo(videoData);
+    res.json(201).json(newVideo);
   } catch (error) {
-    console.error('Error deleting video:', error);
-    res.status(500).send('Internal Server Error');
+    console.error('error saving video details to database:', error);
+    res.status(500).json('Error saving video details.')
+  }
+  };
+
+const s3Client = new S3Client({ 
+  region: process.env.AWS_REGION,
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  }
+});
+
+export const createTidbitSession = async (req, res) => {
+  opentok.createSession({}, function(error, session) {
+    if (error) {
+      console.error('Error creating session:', error);
+      return res.status(500).json('Failed to create session');
+    } else {
+      console.log('Session ID:', session.sessionId);
+      res.json({ sessionId: session.sessionId })
+    }
+  });
+};
+
+const generateTidbitToken = async (req, res) => {
+  const { sessionId } = req.params;
+  try {
+    const token = generateToken(sessionId);
+    res.json({ token });
+  } catch (error) {
+    console.error('Error generating token:', error);
+    res.status(500).json('Failed to generate token');
   }
 };
 
-// Controller function for updating a video file in S3 (if needed)
-exports.updateVideo = async (req, res) => {
-  // Add logic for updating video file in S3 (if needed)
+// Starts a recording. Keep this functionality focused on just starting the recording.
+const startTidbitRecording = async (req, res) => {
+  const sessionId = req.body.sessionId;
+  opentok.startArchive(sessionId, { name: 'Session Recording' }, (error, archive) => {
+    if (error) {
+      return res.status(500).json(error);
+    }
+    res.json({ archiveId: archive.id });
+  });
+};
+
+
+const stopTidbitRecording = async (req, res) => {
+  const archiveId = req.body.archiveId; // Assuming you'll pass the archiveId to stop the recording
+  
+  opentok.stopArchive(archiveId, (error, archive) => {
+    if (error) {
+      return res.status(500).json(error);
+    }
+    // Once stopped, the archive object is returned, and you can respond accordingly
+    res.json({ message: 'Recording stopped successfully', archiveId: archive.id });
+  });
+};
+
+const uploadTidbit = async (req, res) => {
+  const archiveId = req.body.archiveId;
+
+  opentok.getArchive(archiveId, async (error, archive) => {
+    if (error) {
+      return res.status(500).json(error);
+    }
+    if (!archive.url) {
+      return res.status(400).json('Archive URL not available');
+    }
+
+    const response = await fetch(archive.url);
+    if (!response.ok) {
+      return res.status(500).json('Failed to download archive');
+    }
+
+    const fileName = `${archiveId}.mp4`;
+    const s3Params = {
+      Bucket: process.env.AWS_S3_BUCKET_NAME,
+      Key: `recordings/${fileName}`,
+      Body: response.body, // Stream directly to S3
+      ContentType: 'video/mp4',
+    };
+
+    try {
+      await s3Client.json(new PutObjectCommand(s3Params));
+      res.json({ message: 'Tidbit uploaded successfully', fileName });
+    } catch (s3Err) {
+      console.error('Error uploading to S3:', s3Err);
+      return res.status(500).json("Error uploading tidbit to S3.");
+    }
+  });
+};
+
+const updateTidbitMetadata = async (req,  res) => {
+  const videoId = req.params.id;
+  const videoData = {
+    title: req.body.title,
+    summary: req.body.summary,
+    video_url: req.body.video_url,
+    duration: req.body.duration
+  };
+  try {
+    const updatedVideo = await updateVideo(videoId, videoData);
+    if (updatedVideo) {
+      res.json({ message: 'Video updated successfully', video: updatedVideo });
+    } else {
+      res.status(404).json('Video not found c');
+    }
+  } catch (error) {
+    console.error('Error updating video c', error);
+    res.status(500).json('Error updating video');
+  }
+};
+
+const deleteTidbit = async (req, res) => {
+  const videoId = req.params.id;
+  try {
+    const deletedVideo = await deleteVideo(videoId);
+    if (deletedVideo) {
+      res.json({ message: 'Video deleted successfully', video: deletedVideo });
+    } else {
+      res.status(404).json('Video not found c')
+    } 
+    } catch (error) {
+      console.error('Error deleting video c:', error);
+      res.status(500).json('Error deleting video c')
+  }
+}
+
+
+export default {
+  getAllTidbits,
+  getTidbitsById,
+  createTidbitsMetadata,
+  createTidbitSession,
+  generateTidbitToken,
+  startTidbitRecording,
+  stopTidbitRecording,
+  uploadTidbit,
+  updateTidbitMetadata,
+  deleteTidbit
 };
