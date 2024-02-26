@@ -3,8 +3,8 @@ dotenv.config();
 import OpenTok from 'opentok';
 const opentok = new OpenTok(process.env.VONAGE_API_KEY, process.env.VONAGE_SECRET);
 
-console.log('Vonage API Key:', process.env.VONAGE_API_KEY);
-console.log('Vonage Secret message XXXXXXX:', process.env.VONAGE_SECRET);
+// console.log('Vonage API Key:', process.env.VONAGE_API_KEY);
+// console.log('Vonage Secret message XXXXXXX:', process.env.VONAGE_SECRET);
 
 export const createSession = () => {
     return new Promise((resolve, reject) => {

@@ -16,8 +16,7 @@ import {
 } from '../queries/videos.js'
 
 
-console.log('Vonage API Key XXXXXXX:', process.env.VONAGE_API_KEY);
-console.log('Vonage Secret message:', process.env.VONAGE_SECRET);
+// console.log('Vonage API Key XXXXXXX:', process.env.VONAGE_API_KEY);rs
 
 const opentok = new OpenTok(process.env.VONAGE_API_KEY, process.env.VONAGE_SECRET);
 
