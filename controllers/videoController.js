@@ -4,7 +4,7 @@ dotenv.config();
 import fetch from 'node-fetch';
 import OpenTok from 'opentok';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { createSession, generateToken } from '../service/videoService.js';
+import { session, token } from '../service/videoService.js';
 import fs from 'fs';
 import path from 'path';
 import {
@@ -20,7 +20,7 @@ import {
 
 const opentok = new OpenTok(process.env.VONAGE_API_KEY, process.env.VONAGE_SECRET);
 
-const getAllTidbits = async (req, res) => {
+const allVideos = async (req, res) => {
   try {
     const videos = await getAllVideos();
     res.json(videos);
@@ -30,7 +30,7 @@ const getAllTidbits = async (req, res) => {
   }
 };
 
-const getTidbitsById = async (req, res) => {
+const videoById = async (req, res) => {
   try {
     const video = await getVideoById(req.params.id);
     if (video) {
@@ -44,7 +44,7 @@ const getTidbitsById = async (req, res) => {
   }
 };
 
-const createTidbitsMetadata = async (req, res) => {
+const createVideoMetadata = async (req, res) => {
   try {
     const videoData = {
       user_id: req.user.id,
@@ -69,22 +69,48 @@ const s3Client = new S3Client({
   }
 });
 
-export const createTidbitSession = async (req, res) => {
-  opentok.createSession({}, function(error, session) {
-    if (error) {
-      console.error('Error creating session:', error);
-      return res.status(500).json('Failed to create session');
-    } else {
-      console.log('Session ID:', session.sessionId);
-      res.json({ sessionId: session.sessionId })
-    }
-  });
-};
+// revamp from media router
+export const creatingSession = async (req, res) => {
+  const { archiveMode, location } = req.body;
+  const options = {
+    mediaMode: "routed",
+  };
+    if (req.body.location) {
+      options.location = req.body.location;
+    } 
+    opentok.createSession(options, (error, session) => {
+      if (error) {
+        console.error('Error creating session:', error);
+        return res.status(500).json({ message: 'Failed to create session', error: error.message });
+      }
+    console.log('Session created successfully:', session.sessionId);
+  res.json({ sessionId: session.sessionId });
+});
+  }
+  
 
-const generateTidbitToken = async (req, res) => {
-  const { sessionId } = req.params;
+// original session code block
+// export const creatingSession = async (req, res) => {
+//   opentok.createSession({}, function(error, session) {
+//     if (error) {
+//       console.error('Error creating session:', error);
+//       return res.status(500).json('Failed to create session');
+//     } else {
+//       console.log('Session ID:', session.sessionId);
+//       res.json({ sessionId: session.sessionId })
+//     }
+//   });
+// };
+
+export const generatingToken = async (req, res) => {
+  const  sessionId  = req.params.sessionId;
   try {
-    const token = generateToken(sessionId);
+    const token = opentok.generateToken(sessionId, {
+      role: 'publisher',
+      expireTime: (new Date().getTime() / 1000) + (7 * 24 * 60 *60),
+      data: 'example_data',
+    });
+    console.log("Token generated:", token);
     res.json({ token });
   } catch (error) {
     console.error('Error generating token:', error);
@@ -93,30 +119,57 @@ const generateTidbitToken = async (req, res) => {
 };
 
 // Starts a recording. Keep this functionality focused on just starting the recording.
-const startTidbitRecording = async (req, res) => {
+
+const startVideoRecording = async (req, res) => {
   const sessionId = req.body.sessionId;
+  console.log('Attempting to start recording session:', sessionId);
+  
   opentok.startArchive(sessionId, { name: 'Session Recording' }, (error, archive) => {
     if (error) {
-      return res.status(500).json(error);
+      console.error('OpenTok startArchive error:', error);
+      return res.status(500).json({ message: 'Failed to start recording', error: error.toString() });
     }
+    console.log('Archive started successfully:', archive.id);
     res.json({ archiveId: archive.id });
   });
 };
 
 
-const stopTidbitRecording = async (req, res) => {
-  const archiveId = req.body.archiveId; // Assuming you'll pass the archiveId to stop the recording
-  
+const stopVideoRecording = async (req, res) => {
+  const { archiveId } = req.body;
+  console.log('[stopVideoRecording] Attempting to stop recording for archive:', archiveId);
+
+  if (!archiveId) {
+    console.error('[stopVideoRecording] No archiveId provided for stopping recording');
+    return res.status(400).json({ message: 'archiveId is required' });
+  }
+
   opentok.stopArchive(archiveId, (error, archive) => {
     if (error) {
-      return res.status(500).json(error);
+      console.error('[stopVideoRecording] OpenTok stopArchive error:', error);
+      return res.status(500).json({ message: 'Failed to stop recording', error: error.message || 'Internal Server Error' });
     }
-    // Once stopped, the archive object is returned, and you can respond accordingly
+    console.log('[stopVideoRecording] Recording stopped successfully:', archive.id);
     res.json({ message: 'Recording stopped successfully', archiveId: archive.id });
   });
 };
 
-const uploadTidbit = async (req, res) => {
+
+// export const getArchiveInformation = async (req, res) => {
+//   const { archiveId } = req.params;
+//   opentok.getArchive(archiveId, (error, archive) => {
+//     if (error) {
+//       console.error('[getArchiveInformation] Error retrieving archive:', error);
+//       return res.status(500).json({ message: 'Failed to retrieve archive information', error: error.message || 'Internal Server Error' });
+//     }console.log('[getArchiveInformation] Archive details retrieved successfully:', archive);
+//     res.json(archive);
+//   });
+// };
+
+
+
+
+const uploadVideo = async (req, res) => {
   const archiveId = req.body.archiveId;
 
   opentok.getArchive(archiveId, async (error, archive) => {
@@ -150,7 +203,7 @@ const uploadTidbit = async (req, res) => {
   });
 };
 
-const updateTidbitMetadata = async (req,  res) => {
+const updateVideoMetadata = async (req,  res) => {
   const videoId = req.params.id;
   const videoData = {
     title: req.body.title,
@@ -171,7 +224,7 @@ const updateTidbitMetadata = async (req,  res) => {
   }
 };
 
-const deleteTidbit = async (req, res) => {
+const deleteVideoMetadata = async (req, res) => {
   const videoId = req.params.id;
   try {
     const deletedVideo = await deleteVideo(videoId);
@@ -188,14 +241,22 @@ const deleteTidbit = async (req, res) => {
 
 
 export default {
-  getAllTidbits,
-  getTidbitsById,
-  createTidbitsMetadata,
-  createTidbitSession,
-  generateTidbitToken,
-  startTidbitRecording,
-  stopTidbitRecording,
-  uploadTidbit,
-  updateTidbitMetadata,
-  deleteTidbit
+  allVideos,
+  videoById,
+  createVideoMetadata,
+  creatingSession,
+  generatingToken,
+  startVideoRecording,
+  stopVideoRecording,
+  uploadVideo,
+  updateVideoMetadata,
+  deleteVideoMetadata
 };
+
+
+
+
+
+
+
+

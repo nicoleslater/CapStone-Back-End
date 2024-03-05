@@ -6,9 +6,9 @@ const opentok = new OpenTok(process.env.VONAGE_API_KEY, process.env.VONAGE_SECRE
 // console.log('Vonage API Key:', process.env.VONAGE_API_KEY);
 // console.log('Vonage Secret message XXXXXXX:', process.env.VONAGE_SECRET);
 
-export const createSession = () => {
+export const session = () => {
     return new Promise((resolve, reject) => {
-        opentok.createSession({}), function(error, session) {
+        opentok.createSession({ mediaMode: "routed", archiveMode: "always" }, function(error, session) {
             if (error) {
                 console.log("Error creating session:", error);
                 reject(error);
@@ -16,11 +16,11 @@ export const createSession = () => {
                 console.log("Session ID: " + session.sessionId);
                 resolve(session.sessionId);
             }
-        };
+        });
     });
 };
 
-export const generateToken = (sessionId, role = "publisher", data = "") => {
+export const token = (sessionId, role = "publisher", data = "") => {
     console.log("generate token function XXXXXXX")
     const tokenOptions = {
         role,

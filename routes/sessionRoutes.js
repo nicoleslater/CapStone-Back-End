@@ -1,9 +1,9 @@
 import express from 'express';
-import { createTidbitSession, generateTidbitToken } from '../controllers/videoController';
+import { creatingSession, generatingToken } from '../controllers/videoController';
 
 const router = express.Router();
 
-router.post('/create-session', createTidbitSession);
-router.get('/generate-token/:sessionId', generateTidbitToken);
+router.post('/session', creatingSession);
+router.get('/token/:sessionId', generatingToken);
 
 export default sessionsRouter;
