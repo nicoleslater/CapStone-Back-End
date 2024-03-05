@@ -1,9 +1,9 @@
+
+
 import express from "express";
 import cors from "cors";
 import morgan from 'morgan'
 import { S3Client } from "@aws-sdk/client-s3";
-import uploadRoutes from './routes/uploadRoutes.js';
-import videoRoutes from './routes/videoRoutes.js'
 
 const s3Client = new S3Client({
     region: process.env.AWS_REGION,
@@ -19,14 +19,21 @@ app.use(morgan('dev'));
 app.use(cors());
 app.use(express.json());
 
-// Added for the S3 upload route
-
-app.use('/api/uploads', uploadRoutes); 
-app.use('/api/videos', videoRoutes); 
-
 app.get("/", (req, res) => {
     res.send("Welcome to CapStone!");
 });
+
+// Added for the S3 upload route
+import uploadRoutes from './routes/uploadRoutes.js';
+
+import videoRoutes from './routes/videoRoutes.js'
+import { session, token }  from './service/videoService.js';
+
+app.use('/uploads', uploadRoutes); 
+app.use('/videos', videoRoutes); 
+// app.post('/videos/session', session);
+// app.get('/videos/token/:sessionId', token);
+
 
 app.get("*", (req, res) => {
     res.status(404).json({ success: false, data: { error: "Page is not found!" } });

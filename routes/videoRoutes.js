@@ -1,16 +1,18 @@
 import express from 'express';
-import { createSession, generateToken } from '../service/videoService.js'
 import videoController from '../controllers/videoController.js';
 const router = express.Router();
 
-router.post('/create-session', videoController.createTidbitSession);
+router.post('/session', videoController.creatingSession);
 
-router.get('/generate-token/:sessionId', videoController.generateTidbitToken);
-router.post('/start-recording', videoController.startTidbitRecording);
+router.get('/token/:sessionId', videoController.generatingToken);
+router.post('/start-recording', videoController.startVideoRecording);
 
-router.post('/stop-recording', videoController.stopTidbitRecording);
+router.post('/stop-recording', videoController.stopVideoRecording);
 
-router.post('/upload-recording', videoController.uploadTidbit);
+// router.get('/archives/:archiveId', videoController.getArchiveInformation);
+
+
+router.post('/upload-recording', videoController.uploadVideo);
 
 
 
