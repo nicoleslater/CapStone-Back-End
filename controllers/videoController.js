@@ -4,7 +4,6 @@ dotenv.config();
 import fetch from 'node-fetch';
 import OpenTok from 'opentok';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
-import { session, token } from '../service/videoService.js';
 import fs from 'fs';
 import path from 'path';
 import {
@@ -16,7 +15,8 @@ import {
 } from '../queries/videos.js'
 
 
-// console.log('Vonage API Key XXXXXXX:', process.env.VONAGE_API_KEY);rs
+console.log('Vonage API Key XXXXXXX:', process.env.VONAGE_API_KEY);
+console.log('Vonage Secret message:', process.env.VONAGE_SECRET);
 
 const opentok = new OpenTok(process.env.VONAGE_API_KEY, process.env.VONAGE_SECRET);
 
@@ -69,38 +69,17 @@ const s3Client = new S3Client({
   }
 });
 
-// revamp from media router
 export const creatingSession = async (req, res) => {
-  const { archiveMode, location } = req.body;
-  const options = {
-    mediaMode: "routed",
-  };
-    if (req.body.location) {
-      options.location = req.body.location;
-    } 
-    opentok.createSession(options, (error, session) => {
-      if (error) {
-        console.error('Error creating session:', error);
-        return res.status(500).json({ message: 'Failed to create session', error: error.message });
-      }
-    console.log('Session created successfully:', session.sessionId);
-  res.json({ sessionId: session.sessionId });
-});
-  }
-  
-
-// original session code block
-// export const creatingSession = async (req, res) => {
-//   opentok.createSession({}, function(error, session) {
-//     if (error) {
-//       console.error('Error creating session:', error);
-//       return res.status(500).json('Failed to create session');
-//     } else {
-//       console.log('Session ID:', session.sessionId);
-//       res.json({ sessionId: session.sessionId })
-//     }
-//   });
-// };
+  opentok.createSession({}, function(error, session) {
+    if (error) {
+      console.error('Error creating session:', error);
+      return res.status(500).json('Failed to create session');
+    } else {
+      console.log('Session ID:', session.sessionId);
+      res.json({ sessionId: session.sessionId })
+    }
+  });
+};
 
 export const generatingToken = async (req, res) => {
   const  sessionId  = req.params.sessionId;
@@ -118,22 +97,25 @@ export const generatingToken = async (req, res) => {
   }
 };
 
-// Starts a recording. Keep this functionality focused on just starting the recording.
-
+// Starts a recording. triggers a archiveID
 const startVideoRecording = async (req, res) => {
   const sessionId = req.body.sessionId;
-  console.log('Attempting to start recording session:', sessionId);
-  
+  console.log('[startVideoRecording] Attempting to start recording for session:', sessionId);
+
+  if (!sessionId) {
+    console.error('[startVideoRecording] No sessionId provided for starting recording');
+    return res.status(400).json({ message: 'sessionId is required' });
+  }
+
   opentok.startArchive(sessionId, { name: 'Session Recording' }, (error, archive) => {
     if (error) {
-      console.error('OpenTok startArchive error:', error);
-      return res.status(500).json({ message: 'Failed to start recording', error: error.toString() });
+      console.error('[startVideoRecording] OpenTok startArchive error:', error);
+      return res.status(500).json({ message: 'Failed to start recording', error: error.message || 'Internal Server Error' });
     }
-    console.log('Archive started successfully:', archive.id);
+    console.log('[startVideoRecording] Archive started successfully:', archive.id);
     res.json({ archiveId: archive.id });
   });
 };
-
 
 const stopVideoRecording = async (req, res) => {
   const { archiveId } = req.body;
@@ -154,20 +136,20 @@ const stopVideoRecording = async (req, res) => {
   });
 };
 
-
-// export const getArchiveInformation = async (req, res) => {
-//   const { archiveId } = req.params;
-//   opentok.getArchive(archiveId, (error, archive) => {
-//     if (error) {
-//       console.error('[getArchiveInformation] Error retrieving archive:', error);
-//       return res.status(500).json({ message: 'Failed to retrieve archive information', error: error.message || 'Internal Server Error' });
-//     }console.log('[getArchiveInformation] Archive details retrieved successfully:', archive);
-//     res.json(archive);
-//   });
-// };
-
-
-
+export const getArchive = (archiveId) => {
+  console.log('[getArchive] Retrieving archive details for:', archiveId);
+  return new Promise((resolve, reject) => {
+    opentok.getArchive(archiveId, (error, archive) => {
+      if (error) {
+        console.error('[getArchive] Error retrieving archive:', error);
+        reject(error);
+      } else {
+        console.log('[getArchive] Archive details retrieved successfully:', archive);
+        resolve(archive);
+      }
+    });
+  });
+};
 
 const uploadVideo = async (req, res) => {
   const archiveId = req.body.archiveId;
@@ -252,11 +234,3 @@ export default {
   updateVideoMetadata,
   deleteVideoMetadata
 };
-
-
-
-
-
-
-
-

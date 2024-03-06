@@ -1,19 +1,17 @@
 import express from 'express';
 import videoController from '../controllers/videoController.js';
-const router = express.Router();
+const videos = express.Router();
 
-router.post('/session', videoController.creatingSession);
+videos.post('/session', videoController.creatingSession);
 
-router.get('/token/:sessionId', videoController.generatingToken);
-router.post('/start-recording', videoController.startVideoRecording);
+videos.get('/token/:sessionId', videoController.generatingToken);
 
-router.post('/stop-recording', videoController.stopVideoRecording);
+videos.post('/start-recording', videoController.startVideoRecording);
 
-// router.get('/archives/:archiveId', videoController.getArchiveInformation);
+videos.post('/stop-recording', videoController.stopVideoRecording);
 
-
-router.post('/upload-recording', videoController.uploadVideo);
+videos.post('/upload-recording', videoController.uploadVideo);
 
 
 
-export default router;
+export default videos;

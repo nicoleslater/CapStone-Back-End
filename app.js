@@ -27,12 +27,10 @@ app.get("/", (req, res) => {
 import uploadRoutes from './routes/uploadRoutes.js';
 
 import videoRoutes from './routes/videoRoutes.js'
-import { session, token }  from './service/videoService.js';
 
 app.use('/uploads', uploadRoutes); 
 app.use('/videos', videoRoutes); 
-// app.post('/videos/session', session);
-// app.get('/videos/token/:sessionId', token);
+
 
 
 app.get("*", (req, res) => {

@@ -1,7 +1,7 @@
 import express from 'express';
 const router = express.Router();
 import { uploadFile, downloadFile, deleteFile } from '../controllers/s3Controller.js'; // Adjusted import
-import upload from './uploadMiddleware.js'; // Use the multer configuration from the middleware
+import upload from './uploadMiddleware.js';  
 
 // POST route for file upload
 router.post('/upload', upload.single('file'), (req, res, next) => {

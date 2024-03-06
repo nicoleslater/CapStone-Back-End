@@ -5,16 +5,19 @@
   "description": "Capstone 2024 Tidbits",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "nodemon server.js",
+    "db_schema": "psql -U postgres -f db/schema.sql",
+    "db_seed": "psql -U postgres -f db/seed.sql"
   },
   "keywords": [],
   "author": "Team Tidbits",
   "license": "ISC",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.521.0",
-    "@aws-sdk/lib-storage": "^3.521.0",
-    "@aws-sdk/s3-request-presigner": "^3.521.0",
-    "aws-sdk": "^2.1565.0",
+    "@aws-sdk/client-s3": "^3.525.0",
+    "@aws-sdk/lib-storage": "^3.525.1",
+    "@aws-sdk/s3-request-presigner": "^3.525.0",
+    "aws-sdk": "^2.1570.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.18.2",
