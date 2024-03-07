@@ -70,14 +70,23 @@ const s3Client = new S3Client({
 });
 
 export const creatingSession = async (req, res) => {
-  opentok.createSession({}, function(error, session) {
+  const { archiveMode, location } = req.body;
+  // makes sure mediamode set to routed is engaged without archive/always for start stop functionality to work on record
+  const options = { mediaMode: "routed" };
+
+  if (archiveMode) options.archiveMode = archiveMode;
+  if (location) options.location = location;
+
+  opentok.createSession(options, (error, session) => {
     if (error) {
       console.error('Error creating session:', error);
-      return res.status(500).json('Failed to create session');
+      return res.status(500).json({ message: 'Failed to create session', error: error.message });
     } else {
       console.log('Session ID:', session.sessionId);
       res.json({ sessionId: session.sessionId })
     }
+    console.log('Session created successfully:', session.sessionId);
+    res.json({ sessionId: session.sessionId });
   });
 };
 
