@@ -81,6 +81,9 @@ export const creatingSession = async (req, res) => {
     if (error) {
       console.error('Error creating session:', error);
       return res.status(500).json({ message: 'Failed to create session', error: error.message });
+    } else {
+      console.log('Session ID:', session.sessionId);
+      res.json({ sessionId: session.sessionId })
     }
     console.log('Session created successfully:', session.sessionId);
     res.json({ sessionId: session.sessionId });
