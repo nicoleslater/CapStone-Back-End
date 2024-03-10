@@ -25,9 +25,10 @@ CREATE TABLE videos (
 -- time permitting
 CREATE TABLE closed_captions (
     id SERIAL PRIMARY KEY,
-    video_id INTEGER REFERENCES videos(id) ON DELETE CASCADE,
     timestamp INT NOT NULL, 
-    text TEXT NOT NULL
+    text TEXT NOT NULL,
+    video_id INTEGER REFERENCES videos (id) 
+    ON DELETE CASCADE
 );
 
 -- -- future content
