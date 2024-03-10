@@ -1,3 +1,4 @@
+
 import express from "express";
 import cors from "cors";
 import morgan from 'morgan'
@@ -23,7 +24,6 @@ app.get("/", (req, res) => {
 
 // Added for the S3 upload route
 import uploadRoutes from './routes/uploadRoutes.js';
-
 import videoRoutes from './routes/videoRoutes.js'
 
 app.use('/uploads', uploadRoutes); 

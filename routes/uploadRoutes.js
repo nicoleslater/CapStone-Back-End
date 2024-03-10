@@ -1,6 +1,6 @@
 import express from 'express';
 const router = express.Router();
-import { uploadFile, downloadFile, deleteFile } from '../controllers/s3Controller.js'; // Adjusted import
+import { uploadFile, downloadFile, deleteFile, listFiles } from '../controllers/s3Controller.js'; // Adjusted import
 import upload from './uploadMiddleware.js';  
 
 // POST route for file upload
@@ -18,6 +18,8 @@ router.delete('/delete/:filename', (req, res, next) => {
   console.log('Deleting (uploadRoutes) file:', req.params.filename);
   next();
 }, deleteFile);
+
+router.get('/list', listFiles)
 
 
 export default router;

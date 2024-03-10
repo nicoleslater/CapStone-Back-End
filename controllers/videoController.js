@@ -70,25 +70,18 @@ const s3Client = new S3Client({
 });
 
 export const creatingSession = async (req, res) => {
-  const { archiveMode, location } = req.body;
-  // makes sure mediamode set to routed is engaged without archive/always for start stop functionality to work on record
-  const options = { mediaMode: "routed" };
-
-  if (archiveMode) options.archiveMode = archiveMode;
-  if (location) options.location = location;
-
-  opentok.createSession(options, (error, session) => {
+  opentok.createSession({ mediaMode: "routed" }, function(error, session) {
     if (error) {
       console.error('Error creating session:', error);
-      return res.status(500).json({ message: 'Failed to create session', error: error.message });
+      return res.status(500).json('Failed to create session');
     } else {
       console.log('Session ID:', session.sessionId);
       res.json({ sessionId: session.sessionId })
     }
-    console.log('Session created successfully:', session.sessionId);
-    res.json({ sessionId: session.sessionId });
   });
 };
+
+
 
 export const generatingToken = async (req, res) => {
   const  sessionId  = req.params.sessionId;
@@ -228,7 +221,27 @@ const deleteVideoMetadata = async (req, res) => {
       console.error('Error deleting video c:', error);
       res.status(500).json('Error deleting video c')
   }
-}
+};
+
+const listFiles = async (req, res) => {
+  const params = {
+    Bucket: process.env.BUCKET_NAME,
+  };
+  try {
+    console.log(`Listing files from S3 bucket: ${params.Bucket}`);
+    const command = new ListObjectsV2Command(params);
+    const data = await s3Client.send(command);
+    const files = data.Contents.map((file) => ({
+      name: file.Key,
+      size: file.Size,
+    }));
+
+    res.status(200).json(files);
+  } catch (error) {
+    console.error("Error listing files:", error);
+    res.status(500).json({ message: "Error listing files from S3" });
+  }
+};
 
 
 export default {
@@ -241,5 +254,6 @@ export default {
   stopVideoRecording,
   uploadVideo,
   updateVideoMetadata,
-  deleteVideoMetadata
+  deleteVideoMetadata,
+  listFiles
 };

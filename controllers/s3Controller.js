@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand }from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command }from "@aws-sdk/client-s3";
 import fs from "fs";
 
 
@@ -73,9 +73,31 @@ const deleteFile = async (req, res) => {
   }
 };
 
+const listFiles = async (req, res) => {
+  const params = {
+    Bucket: process.env.BUCKET_NAME,
+  };
+  try {
+    console.log(`Listing files from S3 bucket: ${params.Bucket}`);
+    const command = new ListObjectsV2Command(params);
+    const data = await s3Client.send(command);
+    const files = data.Contents.map((file) => ({
+      name: file.Key,
+      size: file.Size,
+      lastModified: file.LastModified,
+    }));
+
+    res.status(200).json(files);
+  } catch (error) {
+    console.error("Error listing files:", error);
+    res.status(500).json({ message: "Error listing files from S3" });
+  }
+};
+
 
 export {
    uploadFile,
    downloadFile,
-   deleteFile
+   deleteFile,
+   listFiles
   };
