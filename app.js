@@ -2,6 +2,8 @@
 import express from "express";
 import cors from "cors";
 import morgan from 'morgan'
+import admin from 'firebase-admin';
+import { initializeApp } from "firebase-admin/app";
 import { S3Client } from "@aws-sdk/client-s3";
 
 const s3Client = new S3Client({
@@ -24,9 +26,12 @@ app.get("/", (req, res) => {
 
 // Added for the S3 upload route
 import s3Routes from './routes/s3Routes.js';
+import users from './controllers/usersControllers.js'
 import videoRoutes from './routes/videoRoutes.js'
 
+
 app.use('/s3', s3Routes); 
+app.use('/users', users)
 app.use('/videos', videoRoutes); 
 
 
