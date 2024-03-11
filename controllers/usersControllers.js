@@ -2,10 +2,23 @@ const express = require("express");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const db = require("../db/dbConfig");
+import { getAuth } from 'firebase-admin/auth';
 require("dotenv").config();
 
 const users = express.Router();
 const { getUserByEmail, createUser } = require("../queries/users");
+
+
+router.post('/authenticate', async (req, res) => {
+    const { token } = req.body;
+    try {
+        const decodedToken = await getAuth().verifyIdToken(token);
+        const uid = decodedToken.uid;
+        res.json({ success: true, uid, internalUserId: 'YourInternalUserId' })
+    } catch (error) {
+        res.status(401).json({ success: false, message: 'Authentication failed' })
+    }
+});
 
 // registration Endpoint
 users.post("/register", async (req, res) => {
