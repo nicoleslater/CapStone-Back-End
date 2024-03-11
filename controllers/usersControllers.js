@@ -1,16 +1,43 @@
-const express = require("express");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const db = require("../db/dbConfig");
-require("dotenv").config();
+import  express from "express";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import db from "../db/dbConfig";
+import { getAuth } from 'firebase-admin/auth';
 
 const users = express.Router();
 const { getUserByEmail, createUser } = require("../queries/users");
 
+
+users.post('/authenticate', async (req, res) => {
+    const { token } = req.body;
+
+    try {
+        // Verify the token
+        const decodedToken = await admin.auth().verifyIdToken(token);
+        const uid = decodedToken.uid;
+
+        // Check if the user exists in your database
+        let user = await db.oneOrNone('SELECT * FROM users WHERE firebase_uid = $1', [uid]);
+
+        if (!user) {
+            // If the user doesn't exist, create a new user entry
+            // Adjust the SQL query and parameters according to your database schema and requirements
+            user = await db.one('INSERT INTO users (firebase_uid, email) VALUES ($1, $2) RETURNING *', 
+                [uid, decodedToken.email]);
+        }
+
+        // Here, the user is either fetched or created in the database, and you can return a success response
+        res.json({ success: true, message: "User authenticated successfully", user });
+    } catch (error) {
+        console.error("Authentication failed:", error);
+        res.status(401).json({ success: false, message: "Authentication failed" });
+    }
+});
+
 // registration Endpoint
 users.post("/register", async (req, res) => {
-    const { email, password, serviceBranch, yearsOfService } = req.body;
-    if (!email || !password || !serviceBranch || !yearsOfService) {
+    const { email, password } = req.body;
+    if (!email || !password ) {
         return res.status(400).json({ message: "Email and password are required." });
     }
 
@@ -54,4 +81,4 @@ users.post("/login", async (req, res) => {
 });
 
 
-module.exports = users;
+export default users;

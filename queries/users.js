@@ -1,27 +1,42 @@
-const db = require("../db/dbConfig.js");
+const db = require('../db/dbConfig');
 
-
-const createUser = async (user) => {
-    const { email, password, serviceBranch, yearsOfService } = user;
+const  getAllUsers = async () => {
     try {
-        const newUser = await db.one("INSERT INTO users (email, password, service_branch, years_of_service) VALUES ($1, $2, $3, $4) RETURNING *", [email, password, serviceBranch, yearsOfService]);
-        return newUser;
+        const allUsers = await db.any("SELECT * FROM users");
+        return allUsers
     } catch (error) {
-        return error
+        console.error('Error fetching users:', error);
+        throw error
     }
 };
 
-const getUserByEmail = async (email) => {
-    try {
-        const user = await db.oneOrNone("SELECT * FROM users WHERE email= $1", email);
-        return user
-    } catch (error) {
-        return error;
-    }
-};
+module.exports = getAllUsers
+
+// users.js(query):
+// const db = require("../db/dbConfig.js");
 
 
-module.exports = {
-    createUser,
-    getUserByEmail,
-}
+// const createUser = async (user) => {
+//     const { email, password, serviceBranch, yearsOfService } = user;
+//     try {
+//         const newUser = await db.one("INSERT INTO users (email, password, service_branch, years_of_service) VALUES ($1, $2, $3, $4) RETURNING *", [email, password, serviceBranch, yearsOfService]);
+//         return newUser;
+//     } catch (error) {
+//         return error
+//     }
+// };
+
+// const getUserByEmail = async (email) => {
+//     try {
+//         const user = await db.oneOrNone("SELECT * FROM users WHERE email= $1", email);
+//         return user
+//     } catch (error) {
+//         return error;
+//     }
+// };
+
+
+// module.exports = {
+//     createUser,
+//     getUserByEmail,
+// }
