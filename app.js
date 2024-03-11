@@ -23,10 +23,10 @@ app.get("/", (req, res) => {
 });
 
 // Added for the S3 upload route
-import uploadRoutes from './routes/uploadRoutes.js';
+import s3Routes from './routes/s3Routes.js';
 import videoRoutes from './routes/videoRoutes.js'
 
-app.use('/uploads', uploadRoutes); 
+app.use('/s3', s3Routes); 
 app.use('/videos', videoRoutes); 
 
 
